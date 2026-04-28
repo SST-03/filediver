@@ -263,47 +263,8 @@ func getFileMetadata(dataDir *stingray.DataDir) map[stingray.FileID]FileMetadata
 }
 
 func LoadSkinOverrides(dataDir *stingray.DataDir, languageMap map[uint32]string) ([]datalib.UnitSkinOverrideGroup, error) {
-	var getResource datalib.GetResourceFunc = func(id stingray.FileID, typ stingray.DataType) (data []byte, exists bool, err error) {
-		fileInfo, ok := dataDir.Files[id]
-		if !ok || !fileInfo[0].Exists(typ) {
-			return nil, false, nil
-		}
-		exists = true
-		data, err = dataDir.Read(id, typ)
-		return
-	}
-
-	customizationSettings, err := datalib.ParseUnitCustomizationSettings(getResource, languageMap)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing unit customization settings: %v\n", err)
-	}
-
-	var hellpodIdx int = -1
-	var hellpodRackIdx int = -1
-	for i := range customizationSettings {
-		if customizationSettings[i].CollectionType == datalib.CollectionHellpod {
-			hellpodIdx = i
-		} else if customizationSettings[i].CollectionType == datalib.CollectionHellpodRack {
-			hellpodRackIdx = i
-		}
-	}
-	if hellpodIdx != -1 && hellpodRackIdx != -1 {
-		for i := range customizationSettings[hellpodRackIdx].Skins {
-			customizationSettings[hellpodRackIdx].Skins[i].Name = customizationSettings[hellpodIdx].Skins[i].Name
-			for j, ammoRack := range customizationSettings[hellpodRackIdx].Skins[i].Customization.MaterialsTexturesOverrides {
-				if ammoRack.MaterialID == stingray.Sum("m_ammo_rack").Thin() || ammoRack.MaterialID.Value == 0xefd45abb {
-					// Rattlesnake overrides the wrong material ids, fix it so they use the correct ones
-					customizationSettings[hellpodRackIdx].Skins[i].Customization.MaterialsTexturesOverrides[j].MaterialID = stingray.Sum("m_rack").Thin()
-				}
-			}
-		}
-	}
-
+	// Try to delete all to fix?
 	skinOverrideGroups := make([]datalib.UnitSkinOverrideGroup, 0)
-	for _, setting := range customizationSettings {
-		skinOverrideGroups = append(skinOverrideGroups, setting.GetSkinOverrideGroup())
-	}
-
 	return skinOverrideGroups, nil
 }
 
@@ -403,9 +364,7 @@ func OpenGameDir(ctx context.Context, gameDir string, hashStrings []string, thin
 	}
 
 	weaponPaintSchemes, err := LoadPaintSchemes(dataDir, mapping)
-	if err != nil {
-		return nil, fmt.Errorf("error loading weapon paint schemes: %v", err)
-	}
+	// Try to remove all
 
 	return &App{
 		Hashes:             hashesMap,
